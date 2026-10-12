@@ -1,0 +1,6 @@
+{
+  "name": "AI Video Director - สตูดิโอผู้กำกับวิดีโอ AI",
+  "description": "ระบบผู้กำกับและออกแบบวิดีโอ AI วางแผนบท แบ่งช็อต ล็อคตัวละคร สร้าง Image/Motion Prompts และแผนตัดต่อครบวงจรฟรี",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
