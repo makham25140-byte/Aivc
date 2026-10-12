@@ -1,4 +1,4 @@
-import { CharacterProfile, EnvironmentAnchor, ShotDetail } from '../types/director';
+import type { CharacterProfile, EnvironmentAnchor, ShotDetail } from '../types/director.ts';
 
 export interface GeneratedScenePrompts {
   positivePromptEn: string;

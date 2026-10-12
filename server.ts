@@ -4,9 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
-import { GenerateRequest, ProductionBlueprint } from './src/types/director.js';
-import { providerRegistry } from './src/server/providerAdapters.js';
-import { generateCharacterAwarePrompts, detectConsistencyConflicts } from './src/utils/consistencyEngine.js';
+import type { GenerateRequest, ProductionBlueprint } from './src/types/director.ts';
+import { providerRegistry } from './src/server/providerAdapters.ts';
+import { generateCharacterAwarePrompts, detectConsistencyConflicts } from './src/utils/consistencyEngine.ts';
 
 dotenv.config();
 

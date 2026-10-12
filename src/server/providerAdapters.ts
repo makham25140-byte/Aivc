@@ -1,11 +1,11 @@
 import { GoogleGenAI } from '@google/genai';
-import {
+import type {
   DirectImageGenRequest,
   DirectImageGenResponse,
   DirectVideoGenRequest,
   DirectVideoGenResponse,
   ProviderStatusInfo,
-} from '../types/director.js';
+} from '../types/director.ts';
 
 // -------------------------------------------------------------
 // Provider Adapter Interfaces (Feature 4: Provider Adapters)
