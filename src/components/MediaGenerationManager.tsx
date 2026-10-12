@@ -38,6 +38,7 @@ import { PromptConsistencyInspector } from './PromptConsistencyInspector';
 import { GoogleFlowWorkflowPanel } from './GoogleFlowWorkflowPanel';
 import { BatchImageProgressModal } from './BatchImageProgressModal';
 import { GoogleFlowBatchModal } from './GoogleFlowBatchModal';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface MediaGenerationManagerProps {
   blueprint: ProductionBlueprint;
@@ -53,7 +54,7 @@ const DEFAULT_IMAGE_TOOLS = [
 ];
 
 const DEFAULT_VIDEO_TOOLS = [
-  { name: 'Google Flow (labs.google/flow)', url: 'https://labs.google/flow', tier: 'Google Labs AI Video Workspace' },
+  { name: 'Google Flow (flow.google.com)', url: 'https://flow.google.com/', tier: 'Google Labs AI Video Workspace' },
   { name: 'Kling AI (klingai.com)', url: 'https://klingai.com', tier: '66 เครดิตฟรีทุกวัน (5s)' },
   { name: 'Haiper 2.0', url: 'https://haiper.ai', tier: 'HD Video ฟรี' },
   { name: 'Luma Dream Machine', url: 'https://lumalabs.ai/dream-machine', tier: 'ฟรี 30 เจน/เดือน' },
@@ -1124,13 +1125,15 @@ export const MediaGenerationManager: React.FC<MediaGenerationManagerProps> = ({
       )}
 
       {/* Google Flow Batch Modal (Requirement C: One-Click Workflow) */}
-      <GoogleFlowBatchModal
-        isOpen={isGoogleFlowBatchOpen}
-        onClose={() => setIsGoogleFlowBatchOpen(false)}
-        blueprint={blueprint}
-        onUpdateShot={handleUpdateShot}
-        onUpdateBlueprint={onUpdateBlueprint}
-      />
+      <ErrorBoundary fallbackTitle="เกิดข้อผิดพลาดในการแสดงผลหน้าต่าง Google Flow (ข้อมูลฉากยังคงปลอดภัย)">
+        <GoogleFlowBatchModal
+          isOpen={isGoogleFlowBatchOpen}
+          onClose={() => setIsGoogleFlowBatchOpen(false)}
+          blueprint={blueprint}
+          onUpdateShot={handleUpdateShot}
+          onUpdateBlueprint={onUpdateBlueprint}
+        />
+      </ErrorBoundary>
     </div>
   );
 };

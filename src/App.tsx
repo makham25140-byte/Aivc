@@ -32,6 +32,7 @@ import { DirectorAssistantDrawer } from './components/DirectorAssistantDrawer';
 import { AndroidArchitectureHub } from './components/AndroidArchitectureHub';
 import { Phase1DirectorInspector } from './components/Phase1DirectorInspector';
 import { downloadFile, cleanProjectForExport } from './utils/exportUtils';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   const [blueprint, setBlueprint] = useState<ProductionBlueprint>(() => {
@@ -156,7 +157,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+    <ErrorBoundary fallbackTitle="เกิดข้อผิดพลาดในการโหลดระบบ AIVC (ป้องกันจอขาวเรียบร้อย)">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       {/* Top Header */}
       <Header
         onOpenPipelineGuide={() => setIsPipelineGuideOpen(true)}
@@ -448,5 +450,6 @@ export default function App() {
         isRefining={isRefining}
       />
     </div>
-  );
+  </ErrorBoundary>
+);
 }

@@ -38,6 +38,7 @@ import { PromptConsistencyInspector } from './PromptConsistencyInspector';
 import { GoogleFlowWorkflowPanel } from './GoogleFlowWorkflowPanel';
 import { BatchImageProgressModal } from './BatchImageProgressModal';
 import { GoogleFlowBatchModal } from './GoogleFlowBatchModal';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface StoryboardViewProps {
   blueprint: ProductionBlueprint;
@@ -1202,13 +1203,15 @@ export const StoryboardView: React.FC<StoryboardViewProps> = ({ blueprint, onUpd
       )}
 
       {/* Requirement C: Google Flow Batch One-Click Modal ("เริ่มสร้างภาพทุกฉาก") */}
-      <GoogleFlowBatchModal
-        isOpen={isGoogleFlowBatchOpen}
-        onClose={() => setIsGoogleFlowBatchOpen(false)}
-        blueprint={blueprint}
-        onUpdateShot={onUpdateShot || (() => {})}
-        onUpdateBlueprint={onUpdateBlueprint || (() => {})}
-      />
+      <ErrorBoundary fallbackTitle="เกิดข้อผิดพลาดในการแสดงผลหน้าต่าง Google Flow (ข้อมูลฉากยังคงปลอดภัย)">
+        <GoogleFlowBatchModal
+          isOpen={isGoogleFlowBatchOpen}
+          onClose={() => setIsGoogleFlowBatchOpen(false)}
+          blueprint={blueprint}
+          onUpdateShot={onUpdateShot || (() => {})}
+          onUpdateBlueprint={onUpdateBlueprint || (() => {})}
+        />
+      </ErrorBoundary>
     </div>
   );
 };

@@ -19,10 +19,12 @@ import {
   Download,
   Maximize2,
   AlertCircle,
-  Image as ImageIcon
+  Image as ImageIcon,
+  X
 } from 'lucide-react';
 import { ShotDetail, CharacterProfile, VideoMetadata, ImageMetadata } from '../types/director';
 import { formatPromptForGoogleFlow } from '../utils/consistencyEngine';
+import { OFFICIAL_GOOGLE_FLOW_URL, OFFICIAL_GOOGLE_FLOW_LABS_URL, safeOpenGoogleFlow } from '../utils/flowLinks';
 
 interface GoogleFlowWorkflowPanelProps {
   shot: ShotDetail;
@@ -46,7 +48,8 @@ export const GoogleFlowWorkflowPanel: React.FC<GoogleFlowWorkflowPanelProps> = (
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
-  const officialFlowUrl = 'https://labs.google/flow';
+  const officialFlowUrl = OFFICIAL_GOOGLE_FLOW_URL;
+  const [flowOpenNotice, setFlowOpenNotice] = useState<{ message: string; url: string } | null>(null);
 
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
@@ -54,13 +57,20 @@ export const GoogleFlowWorkflowPanel: React.FC<GoogleFlowWorkflowPanelProps> = (
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleOpenGoogleFlow = (promptToCopy?: string, fieldName?: string) => {
-    if (promptToCopy && fieldName) {
-      navigator.clipboard.writeText(promptToCopy);
+  const handleOpenGoogleFlow = async (promptToCopy?: string, fieldName?: string) => {
+    if (fieldName) {
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 2000);
     }
-    window.open(officialFlowUrl, '_blank', 'noopener,noreferrer');
+    const result = await safeOpenGoogleFlow(promptToCopy);
+    if (result.isBlockedByPopupBlocker) {
+      setFlowOpenNotice({
+        message: result.errorMessage || 'เบราว์เซอร์บล็อกหน้าต่างแท็บใหม่ กรุณาคลิกปุ่มเปิดโดยตรง',
+        url: result.targetUrl,
+      });
+    } else {
+      setFlowOpenNotice(null);
+    }
   };
 
   // Requirement D: Image Import & File Validation
@@ -213,19 +223,69 @@ export const GoogleFlowWorkflowPanel: React.FC<GoogleFlowWorkflowPanelProps> = (
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              สร้างภาพนิ่งและวิดีโอผ่าน Google Flow (labs.google/flow) พร้อมระบบล็อคตัวละคร
+              สร้างภาพนิ่งและวิดีโอผ่าน Google Flow (flow.google.com) พร้อมระบบล็อคตัวละคร
             </p>
           </div>
         </div>
 
-        <button
-          onClick={() => handleOpenGoogleFlow()}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition min-h-[40px] touch-manipulation"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          <span>เปิดเว็บ Google Flow (labs.google/flow)</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href={OFFICIAL_GOOGLE_FLOW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition min-h-[40px] touch-manipulation cursor-pointer"
+            title="เปิด flow.google.com ในแท็บใหม่โดยตรง (ป้องกันการโดนบล็อกป๊อปอัป)"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>เปิดเว็บ Google Flow (flow.google.com)</span>
+          </a>
+        </div>
       </div>
+
+      {/* Anti-Blank Popup Blocked Fallback Banner */}
+      {flowOpenNotice && (
+        <div className="p-3 bg-amber-950/85 border border-amber-500/40 rounded-xl text-xs text-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{flowOpenNotice.message}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <a
+              href={flowOpenNotice.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow transition cursor-pointer"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>เปิด flow.google.com ในแท็บใหม่</span>
+            </a>
+            <a
+              href={OFFICIAL_GOOGLE_FLOW_LABS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs border border-slate-700 transition cursor-pointer"
+            >
+              <ExternalLink className="w-3 h-3" />
+              <span>Google Labs Flow</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => handleOpenGoogleFlow(googleFlowImagePrompt, 'image-prompt')}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/40 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/40 text-xs transition cursor-pointer"
+            >
+              <span>ลองเปิดใหม่อีกครั้ง</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFlowOpenNotice(null)}
+              className="p-1 text-slate-400 hover:text-white"
+              title="ปิดการแจ้งเตือน"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Workflow Mode Tabs (IMAGE vs VIDEO) */}
       <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
