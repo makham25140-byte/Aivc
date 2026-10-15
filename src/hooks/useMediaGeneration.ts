@@ -37,6 +37,12 @@ export interface BatchImageProgress {
   isComplete: boolean;
 }
 
+export interface ShotActionState {
+  status: 'IDLE' | 'GENERATING_IMAGE' | 'GENERATING_VIDEO' | 'SUCCESS' | 'FAILED';
+  error?: string;
+  message?: string;
+}
+
 export function useMediaGeneration(
   onUpdateShot?: (updatedShot: ShotDetail) => void,
   blueprint?: ProductionBlueprint
@@ -44,6 +50,14 @@ export function useMediaGeneration(
   const [generatingImageShot, setGeneratingImageShot] = useState<number | null>(null);
   const [generatingVideoShot, setGeneratingVideoShot] = useState<number | null>(null);
   const [errorNotice, setErrorNotice] = useState<GenerationErrorNotice | null>(null);
+  
+  // Default to verified 100% free providers
+  const [selectedImageProvider, setSelectedImageProvider] = useState<ImageProviderId>('hf-flux');
+  const [selectedVideoProvider, setSelectedVideoProvider] = useState<VideoProviderId>('hf-sulphur');
+
+  // Per-shot detailed action states
+  const [shotStates, setShotStates] = useState<Record<number, ShotActionState>>({});
+
   const [providerStatuses, setProviderStatuses] = useState<{
     imageProviders: ProviderStatusInfo[];
     videoProviders: ProviderStatusInfo[];
@@ -75,7 +89,7 @@ export function useMediaGeneration(
     async (
       shot: ShotDetail,
       aspectRatio?: '9:16' | '16:9' | '1:1' | '4:3' | '3:4',
-      provider: ImageProviderId = 'google-gemini'
+      provider?: ImageProviderId
     ): Promise<{
       success: boolean;
       data?: DirectImageGenResponse;
@@ -83,6 +97,8 @@ export function useMediaGeneration(
       requirementsNotice?: string;
       setupInstructions?: string;
     }> => {
+      const activeProvider = provider || selectedImageProvider || 'hf-flux';
+
       if (!shot.imagePrompt?.positivePromptEn) {
         return {
           success: false,
@@ -90,7 +106,7 @@ export function useMediaGeneration(
         };
       }
 
-      // Step 2 & 3: Retrieve assigned characters from blueprint roster
+      // Retrieve assigned characters from blueprint roster
       const assignedCharacters = (blueprint?.characters || [])
         .filter((c) => (shot.characterIds || []).includes(c.id))
         .map((c) => ({
@@ -102,6 +118,11 @@ export function useMediaGeneration(
           referenceImage: c.referenceImageNotes || c.referenceImageUrl || '',
         }));
 
+      setShotStates((prev) => ({
+        ...prev,
+        [shot.shotNumber]: { status: 'GENERATING_IMAGE', message: 'กำลังสร้างภาพผ่าน AI...' },
+      }));
+
       try {
         const res = await fetch('/api/media/generate-image', {
           method: 'POST',
@@ -112,7 +133,7 @@ export function useMediaGeneration(
             aspectRatio: aspectRatio || shot.imagePrompt.aspectRatio || '9:16',
             sceneId: shot.sceneId || `SC-${String(shot.shotNumber).padStart(2, '0')}`,
             shotNumber: shot.shotNumber,
-            provider,
+            provider: activeProvider,
             assignedCharacters,
           }),
         });
@@ -120,6 +141,10 @@ export function useMediaGeneration(
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           const errMsg = errData?.error || `HTTP ${res.status}: ${res.statusText}`;
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'FAILED', error: errMsg },
+          }));
           return {
             success: false,
             error: errMsg,
@@ -140,8 +165,16 @@ export function useMediaGeneration(
               mediaNotes: `สร้างภาพสำเร็จผ่านโมเดล ${data.model} (${new Date().toLocaleTimeString()})`,
             });
           }
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'SUCCESS', message: `สร้างภาพสำเร็จผ่าน ${data.model}` },
+          }));
           return { success: true, data };
         } else {
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'FAILED', error: data.error || 'โมเดลไม่สามารถสร้างภาพได้' },
+          }));
           return {
             success: false,
             data,
@@ -152,13 +185,18 @@ export function useMediaGeneration(
         }
       } catch (err: any) {
         console.error(`[useMediaGeneration] Image generation error on shot ${shot.shotNumber}:`, err);
+        const errorMsg = err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่ายไปยังเซิร์ฟเวอร์สร้างภาพ';
+        setShotStates((prev) => ({
+          ...prev,
+          [shot.shotNumber]: { status: 'FAILED', error: errorMsg },
+        }));
         return {
           success: false,
-          error: err?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่ายไปยังเซิร์ฟเวอร์สร้างภาพ',
+          error: errorMsg,
         };
       }
     },
-    [blueprint, onUpdateShot]
+    [blueprint, onUpdateShot, selectedImageProvider]
   );
 
   // Single Scene Image Generation (Manual or Individual Trigger)
@@ -166,7 +204,7 @@ export function useMediaGeneration(
     async (
       shot: ShotDetail,
       aspectRatio?: '9:16' | '16:9' | '1:1' | '4:3' | '3:4',
-      provider: ImageProviderId = 'google-gemini'
+      provider?: ImageProviderId
     ) => {
       setGeneratingImageShot(shot.shotNumber);
       setErrorNotice(null);
@@ -188,7 +226,7 @@ export function useMediaGeneration(
     [executeImageGeneration]
   );
 
-  // Batch Image Generation for the Entire Project (Feature: Generate All Images)
+  // Batch Image Generation for the Entire Project
   const generateAllImages = useCallback(
     async (options?: { retryFailedOnly?: boolean; provider?: ImageProviderId }) => {
       const shots = blueprint?.shots || [];
@@ -196,7 +234,6 @@ export function useMediaGeneration(
 
       let targetShots = [...shots];
       if (options?.retryFailedOnly) {
-        // Only retry scenes that don't have a generatedImage or were marked as failed
         targetShots = targetShots.filter((s) => !s.generatedImage || s.generationStatus === 'FAILED');
       }
 
@@ -261,9 +298,9 @@ export function useMediaGeneration(
           };
         });
 
-        // Safe spacing delay (400ms) between sequential calls
+        // Safe spacing delay (500ms) between sequential calls
         if (i < targetShots.length - 1 && !isBatchAbortedRef.current) {
-          await new Promise((resolve) => setTimeout(resolve, 400));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
@@ -287,7 +324,9 @@ export function useMediaGeneration(
 
   // Direct Video Generation
   const generateVideo = useCallback(
-    async (shot: ShotDetail, provider: VideoProviderId = 'google-veo') => {
+    async (shot: ShotDetail, provider?: VideoProviderId) => {
+      const activeProvider = provider || selectedVideoProvider || 'hf-sulphur';
+
       if (!shot.motionPrompt?.videoPromptEn) {
         setErrorNotice({
           title: 'ไม่พบ Motion Prompt สำหรับสร้างวิดีโอ',
@@ -298,6 +337,10 @@ export function useMediaGeneration(
 
       setGeneratingVideoShot(shot.shotNumber);
       setErrorNotice(null);
+      setShotStates((prev) => ({
+        ...prev,
+        [shot.shotNumber]: { status: 'GENERATING_VIDEO', message: 'กำลังเรนเดอร์วิดีโอ AI...' },
+      }));
 
       try {
         const res = await fetch('/api/media/generate-video', {
@@ -308,8 +351,8 @@ export function useMediaGeneration(
             imageUrl: shot.generatedImage || undefined,
             sceneId: shot.sceneId || `SC-${String(shot.shotNumber).padStart(2, '0')}`,
             shotNumber: shot.shotNumber,
-            durationSec: shot.durationSec || 5,
-            provider,
+            durationSec: shot.durationSec || 2,
+            provider: activeProvider,
           }),
         });
 
@@ -324,7 +367,15 @@ export function useMediaGeneration(
               mediaNotes: `สร้างวิดีโอสำเร็จผ่านโมเดล ${data.model} (${new Date().toLocaleTimeString()})`,
             });
           }
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'SUCCESS', message: `สร้างวิดีโอสำเร็จผ่าน ${data.model}` },
+          }));
         } else {
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'FAILED', error: data.error || 'ไม่สามารถสร้างวิดีโอได้' },
+          }));
           setErrorNotice({
             title: `สถานะโมเดลสร้างวิดีโอ (${data.provider || 'AI Video Provider'})`,
             message: data.error || 'โมเดลสร้างวิดีโอยังไม่พร้อมใช้งานในสภาวะแวดล้อมนี้',
@@ -334,21 +385,28 @@ export function useMediaGeneration(
         }
       } catch (err: any) {
         console.error('Video generation request failed:', err);
+        const errMsg = err?.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์สร้างวิดีโอได้ กรุณาลองใหม่อีกครั้ง';
+        setShotStates((prev) => ({
+          ...prev,
+          [shot.shotNumber]: { status: 'FAILED', error: errMsg },
+        }));
         setErrorNotice({
           title: 'เกิดข้อผิดพลาดในการเชื่อมต่อเครือข่าย',
-          message: err?.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์สร้างวิดีโอได้ กรุณาลองใหม่อีกครั้ง',
+          message: errMsg,
         });
       } finally {
         setGeneratingVideoShot(null);
       }
     },
-    [onUpdateShot]
+    [onUpdateShot, selectedVideoProvider]
   );
 
   // Animate Reference Image (Image-to-Video)
   const animateReferenceImage = useCallback(
-    async (shot: ShotDetail, provider: VideoProviderId = 'google-veo') => {
+    async (shot: ShotDetail, provider?: VideoProviderId) => {
+      const activeProvider = provider || selectedVideoProvider || 'hf-sulphur';
       const imageToAnimate = shot.generatedImage || shot.referenceImage;
+
       if (!imageToAnimate) {
         setErrorNotice({
           title: 'ยังไม่มีภาพตั้งต้นสำหรับสร้างวิดีโอ',
@@ -359,18 +417,22 @@ export function useMediaGeneration(
 
       setGeneratingVideoShot(shot.shotNumber);
       setErrorNotice(null);
+      setShotStates((prev) => ({
+        ...prev,
+        [shot.shotNumber]: { status: 'GENERATING_VIDEO', message: 'กำลังแปลงภาพเป็นคลิปวิดีโอ...' },
+      }));
 
       try {
         const res = await fetch('/api/media/generate-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            prompt: shot.motionPrompt?.videoPromptEn || 'Cinematic subtle motion',
+            prompt: shot.motionPrompt?.videoPromptEn || 'Cinematic subtle motion in scene',
             imageUrl: imageToAnimate,
             sceneId: shot.sceneId || `SC-${String(shot.shotNumber).padStart(2, '0')}`,
             shotNumber: shot.shotNumber,
-            durationSec: shot.durationSec || 5,
-            provider,
+            durationSec: shot.durationSec || 2,
+            provider: activeProvider,
           }),
         });
 
@@ -382,37 +444,50 @@ export function useMediaGeneration(
               ...shot,
               generatedVideo: data.videoUrl,
               generationStatus: 'VIDEO_READY',
-              mediaNotes: `สร้างคลิปจากภาพตั้งต้นสำเร็จผ่าน ${data.model}`,
+              mediaNotes: `แปลงภาพตั้งต้นเป็นวิดีโอสำเร็จผ่าน ${data.model}`,
             });
           }
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'SUCCESS', message: `สร้างคลิปจากภาพตั้งต้นสำเร็จผ่าน ${data.model}` },
+          }));
         } else {
+          setShotStates((prev) => ({
+            ...prev,
+            [shot.shotNumber]: { status: 'FAILED', error: data.error || 'ไม่สามารถแปลงภาพเป็นวิดีโอได้' },
+          }));
           setErrorNotice({
             title: `สถานะ Animate Reference Image (${data.provider || 'AI Video'})`,
-            message: data.error || 'ต้องการ API Key หรือ Billing เพื่อแปลงภาพเป็นวิดีโอโดยตรง',
+            message: data.error || 'ไม่สามารถแปลงภาพเป็นวิดีโอได้',
             requirementsNotice: data.requirementsNotice,
             setupInstructions: data.setupInstructions,
           });
         }
       } catch (err: any) {
+        const errMsg = err?.message || 'ไม่สามารถติดต่อบริการสร้างวิดีโอได้';
+        setShotStates((prev) => ({
+          ...prev,
+          [shot.shotNumber]: { status: 'FAILED', error: errMsg },
+        }));
         setErrorNotice({
           title: 'เกิดข้อผิดพลาดในการเชื่อมต่อ',
-          message: err?.message || 'ไม่สามารถติดต่อบริการสร้างวิดีโอได้',
+          message: errMsg,
         });
       } finally {
         setGeneratingVideoShot(null);
       }
     },
-    [onUpdateShot]
+    [onUpdateShot, selectedVideoProvider]
   );
 
-  // Download Image
+  // Download Image with reliable fallback proxy
   const downloadImage = useCallback((shot: ShotDetail) => {
     if (!shot.generatedImage) return;
     const filename = `AIVC-${shot.sceneId || 'Shot-' + shot.shotNumber}-image.png`;
     downloadMediaFromUrl(shot.generatedImage, filename);
   }, []);
 
-  // Download Video
+  // Download Video with reliable fallback proxy
   const downloadVideo = useCallback((shot: ShotDetail) => {
     if (!shot.generatedVideo) return;
     const filename = `AIVC-${shot.sceneId || 'Shot-' + shot.shotNumber}-video.mp4`;
@@ -457,6 +532,11 @@ export function useMediaGeneration(
     clearErrorNotice: () => setErrorNotice(null),
     providerStatuses,
     refreshProviderStatuses,
+    selectedImageProvider,
+    setSelectedImageProvider,
+    selectedVideoProvider,
+    setSelectedVideoProvider,
+    shotStates,
     generateImage,
     generateAllImages,
     batchProgress,

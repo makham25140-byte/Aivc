@@ -8,7 +8,32 @@ interface AssemblyPlanViewProps {
 }
 
 export const AssemblyPlanView: React.FC<AssemblyPlanViewProps> = ({ blueprint }) => {
-  const { assemblyMasterPlan, shots } = blueprint;
+  const assemblyMasterPlan = blueprint?.assemblyMasterPlan || {
+    timelineSummary: 'เรียงคลิปตามลำดับ Shot 1 ถึง Shot สุดท้าย',
+    audioTrackLayers: {
+      voiceoverTrack: 'เสียงพากย์หลัก (Voiceover Master)',
+      backgroundMusic: 'ดนตรีประกอบภาพยนตร์ (BGM)',
+      sfxLayer: 'เสียงเอฟเฟกต์ (SFX Transition)',
+    },
+    colorGradingPalette: {
+      lutRecommendation: 'Teal & Orange / Cinematic Neutral',
+      saturation: '100%',
+      contrast: 'ปานกลาง-สูง',
+      colorTemperature: '5600K Daylight',
+    },
+    exportSettings: {
+      resolution: '1080x1920 (FHD)',
+      frameRate: '30fps / 60fps',
+      format: 'MP4 (H.264)',
+      bitrate: '15-20 Mbps',
+    },
+    capCutImportChecklist: [
+      'นำเข้าไฟล์วิดีโอหรือภาพนิ่งที่สร้างเรียบร้อย',
+      'ปรับสัดส่วน Canvas เป็น 9:16',
+      'วางเสียงพากย์บน Audio Track 1',
+    ],
+  };
+  const shots = Array.isArray(blueprint?.shots) ? blueprint.shots : [];
 
   const handleDownloadCapCutGuide = () => {
     const text = getCapCutGuideText(blueprint);

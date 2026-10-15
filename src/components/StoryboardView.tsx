@@ -27,7 +27,9 @@ import {
   Maximize2,
   Cpu,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import { ProductionBlueprint, ShotDetail, SceneGenerationStatus } from '../types/director';
 import { speechSynthesizer } from '../utils/speechUtils';
@@ -64,6 +66,11 @@ export const StoryboardView: React.FC<StoryboardViewProps> = ({ blueprint, onUpd
     errorNotice,
     clearErrorNotice,
     providerStatuses,
+    selectedImageProvider,
+    setSelectedImageProvider,
+    selectedVideoProvider,
+    setSelectedVideoProvider,
+    shotStates,
     generateImage,
     generateAllImages,
     batchProgress,
@@ -229,10 +236,10 @@ export const StoryboardView: React.FC<StoryboardViewProps> = ({ blueprint, onUpd
         <div className="flex items-center gap-2">
           <Film className="w-4 h-4 text-indigo-400" />
           <span className="text-sm font-semibold text-white">
-            ผังช็อต Storyboard ({blueprint.shots.length} ช็อต • รวม {blueprint.analysis.estimatedTotalDurationSec} วินาที)
+            ผังช็อต Storyboard ({blueprint.shots?.length || 0} ช็อต • รวม {blueprint.analysis?.estimatedTotalDurationSec ?? 60} วินาที)
           </span>
           <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-slate-800 text-slate-300 border border-slate-700">
-            {blueprint.analysis.aspectRatio}
+            {blueprint.analysis?.aspectRatio || '9:16'}
           </span>
         </div>
 
@@ -901,6 +908,52 @@ export const StoryboardView: React.FC<StoryboardViewProps> = ({ blueprint, onUpd
                           </select>
                         </div>
                       </div>
+
+                      {/* Per-shot Real-time Status Banner */}
+                      {shotStates[shot.shotNumber] && shotStates[shot.shotNumber].status !== 'IDLE' && (
+                        <div
+                          className={`p-2 rounded-lg border text-[11px] flex flex-wrap items-center justify-between gap-1.5 transition ${
+                            shotStates[shot.shotNumber].status === 'GENERATING_IMAGE'
+                              ? 'bg-indigo-950/70 border-indigo-500/60 text-indigo-200'
+                              : shotStates[shot.shotNumber].status === 'GENERATING_VIDEO'
+                              ? 'bg-rose-950/70 border-rose-500/60 text-rose-200'
+                              : shotStates[shot.shotNumber].status === 'SUCCESS'
+                              ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200'
+                              : 'bg-rose-950/80 border-rose-500 text-rose-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            {shotStates[shot.shotNumber].status === 'GENERATING_IMAGE' || shotStates[shot.shotNumber].status === 'GENERATING_VIDEO' ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-white shrink-0" />
+                            ) : shotStates[shot.shotNumber].status === 'SUCCESS' ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                            )}
+                            <span>
+                              {shotStates[shot.shotNumber].status === 'GENERATING_IMAGE' && 'กำลังสร้างภาพ AI...'}
+                              {shotStates[shot.shotNumber].status === 'GENERATING_VIDEO' && 'กำลังเรนเดอร์วิดีโอ MP4...'}
+                              {shotStates[shot.shotNumber].status === 'SUCCESS' && (shotStates[shot.shotNumber].message || 'สร้างสำเร็จ')}
+                              {shotStates[shot.shotNumber].status === 'FAILED' && (shotStates[shot.shotNumber].error || 'สร้างไม่สำเร็จ')}
+                            </span>
+                          </div>
+
+                          {shotStates[shot.shotNumber].status === 'FAILED' && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                generateImage(
+                                  shot,
+                                  shotAspectRatios[shot.shotNumber] || (shot.imagePrompt.aspectRatio as any) || '9:16'
+                                )
+                              }
+                              className="px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold transition cursor-pointer"
+                            >
+                              ลองใหม่
+                            </button>
+                          )}
+                        </div>
+                      )}
 
                       {/* 5 Clear Action Controls: Generate Image, Generate Video, Animate Reference Image, Download Image, Download Video */}
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">

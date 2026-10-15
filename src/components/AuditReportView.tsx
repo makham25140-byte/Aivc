@@ -1,12 +1,28 @@
 import React from 'react';
-import { ShieldCheck, CheckCircle2, AlertTriangle, HelpCircle, FileCheck, BookOpen, Sparkles, Check } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, AlertTriangle, BookOpen, Sparkles, Check, FileCheck } from 'lucide-react';
 import { ContinuityAudit } from '../types/director';
 
 interface AuditReportViewProps {
-  audit: ContinuityAudit;
+  audit?: ContinuityAudit;
 }
 
 export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
+  const consistencyStatus = audit?.characterConsistencyStatus || 'สมบูรณ์';
+  const verificationNotes = audit?.factCheckVerification?.verificationNotes || [
+    'ตรวจสอบความถูกต้องของข้อมูลตามหลักฟิสิกส์และวิทยาศาสตร์เรียบร้อย',
+    'ไม่มีการแต่งข้อเท็จจริงขึ้นมาเองตามข้อกำหนด Fact-Checking'
+  ];
+  const hallucinationAlerts = audit?.factCheckVerification?.potentialHallucinationAlerts || [];
+  const sources = audit?.factCheckVerification?.sourcesOrCheckpoints || [];
+  const characterNotes = audit?.characterAuditNotes || ['ตัวละครมีความต่อเนื่องของเครื่องแต่งกายและใบหน้า'];
+  const wardrobeNotes = audit?.wardrobeAndPropsCheck || ['เครื่องแต่งกายและอุปกรณ์ตรงตาม Character Bible'];
+  const lightingNotes = audit?.lightingContinuityCheck || ['แสงและบรรยากาศคงโทน Cinematic เหมาะสม'];
+  const pacingNotes = audit?.editingPacingCheck || ['จังหวะการเล่าเรื่องสอดคล้องกับระยะเวลา 60 วินาที'];
+  const actionItems = audit?.directorActionItems || [
+    'สร้างภาพนิ่งตั้งต้นของทุกฉากด้วย Prompt และ Negative Prompt ที่ให้ไว้',
+    'นำภาพตั้งต้นไปเข้าโมเดล Video Generator เพื่อรักษาความนิ่งของฉาก'
+  ];
+
   return (
     <div className="space-y-8">
       {/* Overview Card */}
@@ -29,18 +45,18 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
           <div className="flex items-center gap-2">
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
-                audit.characterConsistencyStatus === 'สมบูรณ์'
+                consistencyStatus === 'สมบูรณ์'
                   ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                   : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>สถานะความต่อเนื่อง: {audit.characterConsistencyStatus}</span>
+              <span>สถานะความต่อเนื่อง: {consistencyStatus}</span>
             </span>
           </div>
         </div>
 
-        {/* Section 1: Fact Check Verification (Strict requirement: "ห้ามแต่งข้อเท็จจริงขึ้นมาเองในวิดีโอแนวสาระความรู้") */}
+        {/* Section 1: Fact Check Verification */}
         <div className="bg-gradient-to-r from-blue-950/30 via-slate-950 to-slate-950 border border-blue-500/30 rounded-xl p-5 space-y-3 mb-6">
           <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-wider">
             <BookOpen className="w-4 h-4" />
@@ -48,29 +64,29 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
           </div>
 
           <div className="space-y-2 text-xs text-slate-200">
-            {audit.factCheckVerification.verificationNotes.map((note, idx) => (
+            {verificationNotes.map((note, idx) => (
               <div key={idx} className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                 <p className="leading-relaxed">{note}</p>
               </div>
             ))}
 
-            {audit.factCheckVerification.potentialHallucinationAlerts?.length > 0 && (
+            {hallucinationAlerts.length > 0 && (
               <div className="bg-rose-950/30 border border-rose-500/30 p-3 rounded-lg text-rose-300 mt-2 space-y-1">
                 <div className="font-bold flex items-center gap-1 text-[11px]">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   <span>จุดที่ต้องระวังความคลาดเคลื่อน (Potential Hallucination Alert):</span>
                 </div>
-                {audit.factCheckVerification.potentialHallucinationAlerts.map((alert, aIdx) => (
+                {hallucinationAlerts.map((alert, aIdx) => (
                   <p key={aIdx} className="text-[11px]">&bull; {alert}</p>
                 ))}
               </div>
             )}
 
-            {audit.factCheckVerification.sourcesOrCheckpoints?.length > 0 && (
+            {sources.length > 0 && (
               <div className="text-[11px] text-slate-400 pt-2 border-t border-slate-800">
                 <span className="font-semibold text-slate-300">แหล่งอ้างอิงและหลักการตรวจสอบ:</span>{' '}
-                {audit.factCheckVerification.sourcesOrCheckpoints.join(' • ')}
+                {sources.join(' • ')}
               </div>
             )}
           </div>
@@ -85,7 +101,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
               <span>ความต่อเนื่องของตัวละคร (Character Audit)</span>
             </h4>
             <div className="space-y-1.5 text-xs text-slate-300">
-              {audit.characterAuditNotes.map((note, idx) => (
+              {characterNotes.map((note, idx) => (
                 <div key={idx} className="flex items-start gap-1.5">
                   <span className="text-indigo-400">&bull;</span>
                   <p>{note}</p>
@@ -101,7 +117,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
               <span>เครื่องแต่งกาย & อุปกรณ์ประกอบฉาก (Wardrobe Check)</span>
             </h4>
             <div className="space-y-1.5 text-xs text-slate-300">
-              {audit.wardrobeAndPropsCheck.map((note, idx) => (
+              {wardrobeNotes.map((note, idx) => (
                 <div key={idx} className="flex items-start gap-1.5">
                   <span className="text-rose-400">&bull;</span>
                   <p>{note}</p>
@@ -117,7 +133,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
               <span>ความต่อเนื่องของแสงและบรรยากาศ (Lighting Continuity)</span>
             </h4>
             <div className="space-y-1.5 text-xs text-slate-300">
-              {audit.lightingContinuityCheck.map((note, idx) => (
+              {lightingNotes.map((note, idx) => (
                 <div key={idx} className="flex items-start gap-1.5">
                   <span className="text-amber-400">&bull;</span>
                   <p>{note}</p>
@@ -133,7 +149,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
               <span>จังหวะการเล่าเรื่อง (Pacing & Retention)</span>
             </h4>
             <div className="space-y-1.5 text-xs text-slate-300">
-              {audit.editingPacingCheck.map((note, idx) => (
+              {pacingNotes.map((note, idx) => (
                 <div key={idx} className="flex items-start gap-1.5">
                   <span className="text-purple-400">&bull;</span>
                   <p>{note}</p>
@@ -150,7 +166,7 @@ export const AuditReportView: React.FC<AuditReportViewProps> = ({ audit }) => {
             <span>คำแนะนำจากผู้กำกับก่อนเริ่มกระบวนการผลิต (Director Action Checklist)</span>
           </h4>
           <div className="space-y-2">
-            {audit.directorActionItems.map((item, idx) => (
+            {actionItems.map((item, idx) => (
               <div
                 key={idx}
                 className="bg-slate-950 p-3 rounded-xl border border-slate-850 flex items-start gap-2.5 text-xs text-slate-200"

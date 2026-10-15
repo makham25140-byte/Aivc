@@ -81,23 +81,45 @@ export async function downloadMediaFromUrl(url: string, filename: string): Promi
       return true;
     }
 
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Failed to fetch media`);
+    let blob: Blob | null = null;
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        blob = await res.blob();
+      }
+    } catch (corsErr) {
+      console.warn('Direct media download blocked by CORS, trying server proxy...', corsErr);
     }
-    const blob = await res.blob();
-    if (blob.size === 0) {
-      throw new Error('Downloaded file is empty (0 bytes)');
+
+    if (!blob || blob.size === 0) {
+      try {
+        const proxyUrl = `/api/media/proxy?url=${encodeURIComponent(url)}&download=true&filename=${encodeURIComponent(filename)}`;
+        const proxyRes = await fetch(proxyUrl);
+        if (proxyRes.ok) {
+          blob = await proxyRes.blob();
+        }
+      } catch (proxyErr) {
+        console.warn('Proxy download error:', proxyErr);
+      }
     }
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = objectUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(objectUrl);
-    return true;
+
+    if (blob && blob.size > 0) {
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+      return true;
+    }
+
+    if (url && url.startsWith('http')) {
+      window.open(url, '_blank');
+      return true;
+    }
+    return false;
   } catch (err) {
     console.error('Error downloading media:', err);
     if (url && url.startsWith('http')) {

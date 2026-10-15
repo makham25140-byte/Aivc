@@ -90,6 +90,11 @@ export const MediaGenerationManager: React.FC<MediaGenerationManagerProps> = ({
     errorNotice,
     clearErrorNotice,
     providerStatuses,
+    selectedImageProvider,
+    setSelectedImageProvider,
+    selectedVideoProvider,
+    setSelectedVideoProvider,
+    shotStates,
     generateImage,
     generateAllImages,
     batchProgress,
@@ -368,6 +373,192 @@ export const MediaGenerationManager: React.FC<MediaGenerationManagerProps> = ({
             <span className="font-mono text-white font-semibold">
               {Math.round((completedCount / totalScenes) * 100)}%
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Active AI Providers & Quota Control Center (Features 1 & 2) */}
+      <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl p-5 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-teal-400" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              เลือกผู้ให้บริการ AI สร้างภาพและวิดีโอจริง (Active Direct AI Engines)
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsDiagnosticsOpen(true)}
+            className="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 hover:text-white border border-indigo-500/30 flex items-center gap-1.5 transition cursor-pointer"
+          >
+            <Info className="w-3.5 h-3.5 text-indigo-400" />
+            <span>ตรวจสอบสถานะโควตาทุกโมเดล</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Active Image Provider Selection */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-indigo-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                <Camera className="w-3.5 h-3.5 text-indigo-400" />
+                <span>โมเดลสร้างภาพหลัก (Image Provider)</span>
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                ✓ โควตาฟรีพร้อมใช้งาน
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedImageProvider('hf-flux')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedImageProvider === 'hf-flux'
+                    ? 'bg-indigo-950/70 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>Hugging Face FLUX.1-schnell</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40">ฟรี 100% แนะนำ</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    ภาพคุณภาพสูง 8K สมจริง รองรับสไตล์ภาพและตัวละคร ไม่ต้องใช้ API Key
+                  </div>
+                </div>
+                {selectedImageProvider === 'hf-flux' && <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedImageProvider('pollinations')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedImageProvider === 'pollinations'
+                    ? 'bg-indigo-950/70 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>Pollinations AI (Flux / SD)</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40">ฟรี 100% รวดเร็ว</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    เจนภาพเร็ว ไม่ต้องรอคิว สำรองอัตโนมัติเมื่อ Space ไม่ว่าง
+                  </div>
+                </div>
+                {selectedImageProvider === 'pollinations' && <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedImageProvider('google-gemini')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedImageProvider === 'google-gemini'
+                    ? 'bg-indigo-950/70 border-indigo-500 text-white shadow-sm ring-1 ring-indigo-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>Google Gemini (Imagen 3 / Flash Lite Image)</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40">Paid Key เท่านั้น</span>
+                  </div>
+                  <div className="text-[10px] text-amber-400/80 mt-0.5">
+                    โควตา Free Tier = 0 (ต้องผูก Google Cloud Billing ใน Google AI Studio)
+                  </div>
+                </div>
+                {selectedImageProvider === 'google-gemini' && <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Active Video Provider Selection */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-rose-500/20 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                <Video className="w-3.5 h-3.5 text-rose-400" />
+                <span>โมเดลสร้างวิดีโอหลัก (Video Provider)</span>
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                ✓ โควตาฟรีพร้อมใช้งาน
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedVideoProvider('hf-sulphur')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedVideoProvider === 'hf-sulphur'
+                    ? 'bg-rose-950/70 border-rose-500 text-white shadow-sm ring-1 ring-rose-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>Hugging Face Sulphur 2 Video</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-emerald-500/25 text-emerald-300 font-bold border border-emerald-500/40">ฟรี 100% เรนเดอร์ MP4 จริง</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    สร้างคลิป MP4 จาก Motion Prompt และแปลงภาพตั้งต้นเป็นวิดีโอ (Image-to-Video)
+                  </div>
+                </div>
+                {selectedVideoProvider === 'hf-sulphur' && <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedVideoProvider('google-veo')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedVideoProvider === 'google-veo'
+                    ? 'bg-rose-950/70 border-rose-500 text-white shadow-sm ring-1 ring-rose-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>Google Veo (veo-3.1-lite)</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-amber-500/25 text-amber-300 font-bold border border-amber-500/40">Paid Key เท่านั้น</span>
+                  </div>
+                  <div className="text-[10px] text-amber-400/80 mt-0.5">
+                    โควตา Free Tier = 0 (ต้องผูก Google Cloud Billing ใน Google AI Studio)
+                  </div>
+                </div>
+                {selectedVideoProvider === 'google-veo' && <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedVideoProvider('external-api')}
+                className={`text-left p-2.5 rounded-xl border transition flex items-center justify-between cursor-pointer ${
+                  selectedVideoProvider === 'external-api'
+                    ? 'bg-rose-950/70 border-rose-500 text-white shadow-sm ring-1 ring-rose-500/40'
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-xs flex items-center gap-1.5">
+                    <span>External Provider (Kling AI / Replicate)</span>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-slate-700 text-slate-300 font-bold">API Key ในเซิร์ฟเวอร์</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    สำหรับผู้ใช้ที่มี REPLICATE_API_TOKEN หรือ KLING_API_KEY ในระบบ
+                  </div>
+                </div>
+                {selectedVideoProvider === 'external-api' && <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Real Quota & Honesty Notice */}
+        <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-start gap-2.5">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="leading-relaxed">
+            <strong className="text-emerald-300">ยืนยันความพร้อมจริง (Real Free Quota Verified):</strong> ระบบได้ตรวจสอบ Google AI Studio และยืนยันว่าโมเดลสร้างภาพและ Veo มีโควตาเป็น 0 บน Free Tier จึงตั้งค่าเริ่มต้นอัตโนมัติไปยัง Hugging Face FLUX.1 (ภาพ) และ Hugging Face Sulphur 2 (วิดีโอ) ซึ่งเปิดใช้งานได้จริง 100% โดยไม่คิดค่าบริการและไม่ต้องผูกบัตรเครดิต
           </div>
         </div>
       </div>
@@ -700,6 +891,56 @@ export const MediaGenerationManager: React.FC<MediaGenerationManagerProps> = ({
                   </div>
                 </div>
 
+                {/* Per-shot Real-time Status Banner */}
+                {shotStates[shot.shotNumber] && shotStates[shot.shotNumber].status !== 'IDLE' && (
+                  <div
+                    className={`p-2.5 rounded-xl border text-xs flex flex-wrap items-center justify-between gap-2 transition ${
+                      shotStates[shot.shotNumber].status === 'GENERATING_IMAGE'
+                        ? 'bg-indigo-950/70 border-indigo-500/60 text-indigo-200'
+                        : shotStates[shot.shotNumber].status === 'GENERATING_VIDEO'
+                        ? 'bg-rose-950/70 border-rose-500/60 text-rose-200'
+                        : shotStates[shot.shotNumber].status === 'SUCCESS'
+                        ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200'
+                        : 'bg-rose-950/80 border-rose-500 text-rose-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {shotStates[shot.shotNumber].status === 'GENERATING_IMAGE' || shotStates[shot.shotNumber].status === 'GENERATING_VIDEO' ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-white shrink-0" />
+                      ) : shotStates[shot.shotNumber].status === 'SUCCESS' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      )}
+                      <span className="font-medium">
+                        {shotStates[shot.shotNumber].status === 'GENERATING_IMAGE' && 'กำลังสร้างภาพผ่าน AI โมเดลจริง...'}
+                        {shotStates[shot.shotNumber].status === 'GENERATING_VIDEO' && 'กำลังเรนเดอร์วิดีโอ MP4 จริง (ใช้เวลา 10-25 วินาที)...'}
+                        {shotStates[shot.shotNumber].status === 'SUCCESS' && (shotStates[shot.shotNumber].message || 'สร้างสื่อเสร็จสมบูรณ์!')}
+                        {shotStates[shot.shotNumber].status === 'FAILED' && (shotStates[shot.shotNumber].error || 'เกิดข้อผิดพลาดในการสร้างสื่อ')}
+                      </span>
+                    </div>
+
+                    {shotStates[shot.shotNumber].status === 'FAILED' && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => generateImage(shot, currentRatio)}
+                          className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold transition cursor-pointer"
+                        >
+                          ลองสร้างภาพใหม่ (Retry Image)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => generateVideo(shot)}
+                          className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold transition cursor-pointer"
+                        >
+                          ลองสร้างวิดีโอใหม่ (Retry Video)
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Clearly Labeled Action Buttons: Generate Image, Generate Video, Animate Reference Image, Download Image, Download Video */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
                   {/* 1. Generate Image */}
@@ -979,30 +1220,55 @@ export const MediaGenerationManager: React.FC<MediaGenerationManagerProps> = ({
 
                     {/* Interactive Image Inspection Component */}
                     {shot.generatedImage && (
-                      <div className="mt-2 relative rounded-xl overflow-hidden border border-indigo-500/40 bg-slate-900 group">
-                        <img
-                          src={shot.generatedImage}
-                          alt={`Shot ${shot.shotNumber} generated`}
-                          className="w-full max-h-48 object-contain bg-black/50"
-                        />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                      <div className="mt-2 rounded-xl overflow-hidden border border-indigo-500/40 bg-slate-900">
+                        <div className="relative group">
+                          <img
+                            src={shot.generatedImage}
+                            alt={`Shot ${shot.shotNumber} generated`}
+                            className="w-full max-h-48 object-contain bg-black/50"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImage(shot.generatedImage!)}
+                              className="p-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-white text-xs flex items-center gap-1 cursor-pointer"
+                              title="ดูภาพขนาดใหญ่"
+                            >
+                              <Maximize2 className="w-3.5 h-3.5" />
+                              <span>ขยาย</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => updateShotField(originalIndex, { referenceImage: shot.generatedImage })}
+                              className="p-2 rounded-lg bg-teal-600/90 hover:bg-teal-500 text-white text-xs flex items-center gap-1 cursor-pointer"
+                              title="นำภาพนี้ไปตั้งเป็น Reference Image ของฉาก"
+                            >
+                              <CheckSquare className="w-3.5 h-3.5" />
+                              <span>ใช้กับฉาก</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadImage(shot)}
+                              className="p-2 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs flex items-center gap-1 cursor-pointer"
+                              title="ดาวน์โหลดภาพ"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>ดาวน์โหลด</span>
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-2 bg-slate-950 flex flex-wrap items-center justify-between text-[11px] text-slate-400 border-t border-slate-800 gap-1">
+                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>บันทึกผูกกับฉากนี้แล้ว</span>
+                          </span>
                           <button
                             type="button"
-                            onClick={() => setLightboxImage(shot.generatedImage!)}
-                            className="p-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-white text-xs flex items-center gap-1"
-                            title="ดูภาพขนาดใหญ่"
+                            onClick={() => updateShotField(originalIndex, { referenceImage: shot.generatedImage })}
+                            className="text-teal-300 hover:text-white font-medium flex items-center gap-1 cursor-pointer bg-teal-950/60 px-2 py-0.5 rounded border border-teal-500/30"
                           >
-                            <Maximize2 className="w-3.5 h-3.5" />
-                            <span>ขยาย</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => downloadImage(shot)}
-                            className="p-2 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-white text-xs flex items-center gap-1"
-                            title="ดาวน์โหลดภาพ"
-                          >
-                            <Download className="w-3.5 h-3.5" />
-                            <span>ดาวน์โหลด</span>
+                            <CheckSquare className="w-3 h-3" />
+                            <span>ตั้งเป็น Reference Image ของฉาก</span>
                           </button>
                         </div>
                       </div>

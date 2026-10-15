@@ -53,8 +53,8 @@ export type SceneGenerationStatus =
   | 'COMPLETED'
   | 'FAILED';
 
-export type ImageProviderId = 'google-gemini' | 'custom-api';
-export type VideoProviderId = 'google-veo' | 'external-api' | 'google-flow';
+export type ImageProviderId = 'hf-flux' | 'pollinations' | 'google-gemini' | 'custom-api';
+export type VideoProviderId = 'hf-sulphur' | 'google-veo' | 'external-api' | 'google-flow';
 
 export interface ProviderStatusInfo {
   id: string;

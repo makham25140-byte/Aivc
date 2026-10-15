@@ -8,7 +8,18 @@ interface AnalysisAndScriptViewProps {
 }
 
 export const AnalysisAndScriptView: React.FC<AnalysisAndScriptViewProps> = ({ blueprint }) => {
-  const { analysis, scriptFlow } = blueprint;
+  const analysis = blueprint?.analysis || {
+    genre: 'วิดีโอทั่วไป',
+    targetAudience: 'ผู้ใช้งานทั่วไป',
+    objective: 'นำเสนอสาระสำคัญ',
+    coreMessage: blueprint?.projectTitle || 'เนื้อหาวิดีโอ',
+    toneAndMood: 'Cinematic',
+    estimatedTotalDurationSec: 60,
+    aspectRatio: '9:16',
+    platformRecommendation: 'TikTok / Shorts',
+    hookStrategy: 'เปิดเรื่องด้วยคำถามน่าสนใจ',
+  };
+  const scriptFlow = Array.isArray(blueprint?.scriptFlow) ? blueprint.scriptFlow : [];
 
   const playScriptSection = (text: string) => {
     speechSynthesizer.speak(text);

@@ -772,6 +772,35 @@ app.post('/api/media/generate-video', async (req, res) => {
   }
 });
 
+// Proxy endpoint to stream images/videos and bypass CORS/hotlinking restrictions
+app.get('/api/media/proxy', async (req, res) => {
+  try {
+    const mediaUrl = req.query.url as string;
+    if (!mediaUrl || (!mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://'))) {
+      return res.status(400).send('Invalid media URL');
+    }
+    const response = await fetch(mediaUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      },
+    });
+    if (!response.ok) {
+      return res.status(response.status).send('Failed to fetch upstream media');
+    }
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    if (req.query.download === 'true') {
+      const filename = (req.query.filename as string) || 'media-download';
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err: any) {
+    console.error('Error in /api/media/proxy:', err);
+    return res.status(500).send('Proxy error');
+  }
+});
+
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.resolve(__dirname, 'dist')));
